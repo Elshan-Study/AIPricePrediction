@@ -11,6 +11,13 @@ var aiBasedUrl = builder.Configuration["AI_BASE"] ?? "http://localhost:8000";
 builder.Services.AddHttpClient("ai", client =>
 {
     client.BaseAddress = new Uri(aiBasedUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+// Переобучение идёт заметно дольше прогноза — отдельный клиент с большим тайм-аутом
+builder.Services.AddHttpClient("ai-retrain", client =>
+{
+    client.BaseAddress = new Uri(aiBasedUrl);
+    client.Timeout = TimeSpan.FromMinutes(5);
 });
 
 builder.Services.AddCors(

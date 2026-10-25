@@ -1,6 +1,7 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { predict, type PredictIn } from "./api";
 import { cities } from "./cities";
+import DataPage from "./DataPage";
 
 import "./App.css";
 
@@ -9,7 +10,18 @@ const formatPrice = (value: number) =>
       maximumFractionDigits: 0,
     }).format(value);
 
+// простая навигация по hash: #data — страница управления данными
+const currentPage = () => (window.location.hash === "#data" ? "data" : "predict");
+
 function App() {
+  const [page, setPage] = useState(currentPage);
+
+  useEffect(() => {
+    const onHashChange = () => setPage(currentPage());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
   const [formData, setFormData] = useState<PredictIn>({
     bedrooms: 2,
     bathrooms: 1,
@@ -87,9 +99,19 @@ function App() {
                     Недвижимость в цифрах
                 </span>
 
+          <nav className="site-nav" aria-label="Разделы">
+            <a href="#" aria-current={page === "predict" ? "page" : undefined}>
+              Прогноз
+            </a>
+            <a href="#data" aria-current={page === "data" ? "page" : undefined}>
+              Данные
+            </a>
+          </nav>
+
           <span className="edition">AZ / 01</span>
         </header>
 
+        {page === "data" ? <DataPage /> : (
         <main className="main-layout">
           <section className="calculator">
             <div className="eyebrow">
@@ -400,6 +422,7 @@ function App() {
             </div>
           </aside>
         </main>
+        )}
 
         <footer className="site-footer">
           <span>MƏKAN — PROPERTY INTELLIGENCE</span>
