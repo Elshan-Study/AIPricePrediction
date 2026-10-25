@@ -23,11 +23,12 @@ const emptyForm = { bedrooms: "", bathrooms: "", sqm: "", city: "", priceAZN: ""
 function DataPage() {
     // значения формы храним строками, чтобы поле можно было очистить
     const [form, setForm] = useState(emptyForm);
-    const [addStatus, setAddStatus] = useState<Status<ApartmentsOut>>(idle);
+    // вместе с ответом сохраняем, что именно отправили — чтобы это было видно после очистки формы
+    const [addStatus, setAddStatus] = useState<Status<ApartmentsOut & { apartment: typeof emptyForm }>>(idle);
 
     const fileInput = useRef<HTMLInputElement>(null);
     const [file, setFile] = useState<File | null>(null);
-    const [importStatus, setImportStatus] = useState<Status<ApartmentsOut>>(idle);
+    const [importStatus, setImportStatus] = useState<Status<ApartmentsOut & { fileName: string }>>(idle);
 
     const [retrainStatus, setRetrainStatus] = useState<Status<RetrainOut>>(idle);
 
@@ -49,7 +50,7 @@ function DataPage() {
                 city: form.city,
                 priceAZN: Number(form.priceAZN),
             });
-            setAddStatus({ loading: false, error: null, result });
+            setAddStatus({ loading: false, error: null, result: { ...result, apartment: form } });
             setForm(emptyForm);
         } catch (error) {
             setAddStatus({ loading: false, error: errorText(error), result: null });
@@ -63,7 +64,7 @@ function DataPage() {
         setImportStatus({ loading: true, error: null, result: null });
         try {
             const result = await importApartments(file);
-            setImportStatus({ loading: false, error: null, result });
+            setImportStatus({ loading: false, error: null, result: { ...result, fileName: file.name } });
             setFile(null);
             if (fileInput.current) fileInput.current.value = "";
         } catch (error) {
@@ -217,8 +218,14 @@ function DataPage() {
                     )}
                     {addStatus.result && (
                         <p className="success-message" role="status">
-                            {addStatus.result.message}. Всего записей в датасете:{" "}
-                            <strong>{addStatus.result.totalRecords}</strong>
+                            {addStatus.result.message}:{" "}
+                            <strong>
+                                {addStatus.result.apartment.city}, {addStatus.result.apartment.sqm} м²,
+                                спален {addStatus.result.apartment.bedrooms}, ванных {addStatus.result.apartment.bathrooms},
+                                {" "}{formatNumber(Number(addStatus.result.apartment.priceAZN))} ₼
+                            </strong>
+                            <br />
+                            Всего записей в датасете: <strong>{addStatus.result.totalRecords}</strong>
                         </p>
                     )}
                 </form>
@@ -258,11 +265,13 @@ function DataPage() {
 
                     {importStatus.error && (
                         <p className="error-message" role="alert">
-                            Импорт отклонён. {importStatus.error}
+                            Импорт {file ? `файла ${file.name} ` : ""}отклонён. {importStatus.error}
                         </p>
                     )}
                     {importStatus.result && (
                         <p className="success-message" role="status">
+                            Файл <strong>{importStatus.result.fileName}</strong> импортирован.
+                            <br />
                             Добавлено строк: <strong>{importStatus.result.added}</strong>. Всего записей:{" "}
                             <strong>{importStatus.result.totalRecords}</strong>
                         </p>
